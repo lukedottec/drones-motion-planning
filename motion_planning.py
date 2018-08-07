@@ -160,15 +160,15 @@ class MotionPlanning(Drone):
         grid_start = (-north_offset, -east_offset)
 
         # Set goal as some arbitrary position on the grid
-	goal_global_position = [-120.0, 50, self.global_home[2]]
-	goal_north, goal_east, goal_alt = global_to_local(goal_global_position, self.global_home)	
-	grid_goal = (int(goal_north - north_offset), int(goal_east - east_offset))
+        goal_global_position = [-122.401912, 37.794409, self.global_home[2]]
+        goal_north, goal_east, goal_alt = global_to_local(goal_global_position, self.global_home)
+        grid_goal = (int(goal_north - north_offset), int(goal_east - east_offset))
 
         # Run A* from start- to end-cell
         path, cost = a_star_grid(grid, euclid_dist, grid_start, grid_goal)
 
         # Prune path
-	path = prune(path)
+        path = prune(path)
 
         # Convert path to waypoints
         self.waypoints = [[int(p[0] + north_offset), int(p[1] + east_offset), TARGET_ALTITUDE, 0] for p in path]
