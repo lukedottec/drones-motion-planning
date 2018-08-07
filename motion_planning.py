@@ -159,15 +159,10 @@ class MotionPlanning(Drone):
         grid_start_east = int(np.ceil(local_east - east_offset))
         grid_start = (-north_offset, -east_offset)
 
-        # TODO: convert start position to current position rather than map center
-
         # Set goal as some arbitrary position on the grid
+	goal_global_position = [-120.0, 50, self.global_home[2]]
+	goal_north, goal_east, goal_alt = global_to_local(goal_global_position, self.global_home)	
 	grid_goal = (int(goal_north - north_offset), int(goal_east - east_offset))
-
-        # TODO: adapt to set goal as latitude / longitude position and convert
-
-        # Get start position as drone's current position
-        # TODO: Add goal to the graph?
 
         # Run A* from start- to end-cell
         path, cost = a_star_grid(grid, euclid_dist, grid_start, grid_goal)
