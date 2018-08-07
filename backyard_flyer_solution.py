@@ -5,13 +5,10 @@ Solution to the Backyard Flyer Project.
 
 import time
 from enum import Enum
-
 import numpy as np
-
 from udacidrone import Drone
 from udacidrone.connection import MavlinkConnection, WebSocketConnection  # noqa: F401
 from udacidrone.messaging import MsgID
-
 
 class States(Enum):
     MANUAL = 0
@@ -21,9 +18,7 @@ class States(Enum):
     LANDING = 4
     DISARMING = 5
 
-
 class BackyardFlyer(Drone):
-
     def __init__(self, connection):
         super().__init__(connection)
         self.target_position = np.array([0.0, 0.0, 0.0])
@@ -129,7 +124,6 @@ class BackyardFlyer(Drone):
         #    pass
 
         self.stop_log()
-
 
 if __name__ == "__main__":
     conn = MavlinkConnection('tcp:127.0.0.1:5760', threaded=False, PX4=False)

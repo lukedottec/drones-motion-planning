@@ -14,7 +14,7 @@ import re
 from enum import Enum, auto
 
 import numpy as np
-from src.planning import create_grid, euclid_dist, a_star_grid, prune
+from src.planning import create_grid, euclid_dist, a_star_grid
 from udacidrone import Drone
 from udacidrone.connection import MavlinkConnection
 from udacidrone.messaging import MsgID
@@ -159,21 +159,15 @@ class MotionPlanning(Drone):
         grid_start_east = int(np.ceil(local_east - east_offset))
         grid_start = (-north_offset, -east_offset)
 
-        # TODO: convert start position to current position rather than map center
-
         # Set goal as some arbitrary position on the grid
-	grid_goal = (int(goal_north - north_offset), int(goal_east - east_offset))
+	goal_global_position = [-122.401902, 37.794409, self.global_home[2]]
+        goal_north, goal_east, goal_alt = global_to_local(goal_global_position, self.global_home)
+        grid_goal = (int(goal_north - north_offset), int(goal_east - east_offset))
+        print('Local Start and Goal: ', grid_start, grid_goal)
 
-        # TODO: adapt to set goal as latitude / longitude position and convert
-
-        # Get start position as drone's current position
-        # TODO: Add goal to the graph?
-
-        # Run A* from start- to end-cell
+        # Run A* from start- to end-cell and prune path
         path, cost = a_star_grid(grid, euclid_dist, grid_start, grid_goal)
-
-        # Prune path
-	path = prune(path)
+        path = collinearity_path_prune(path)
 
         # Convert path to waypoints
         self.waypoints = [[int(p[0] + north_offset), int(p[1] + east_offset), TARGET_ALTITUDE, 0] for p in path]

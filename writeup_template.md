@@ -27,7 +27,9 @@ You're reading it! Below I describe how I addressed each rubric point and where 
 ### Explain the Starter Code
 
 #### 1. Explain the functionality of what's provided in `motion_planning.py` and `planning_utils.py`
-These scripts contain a basic planning implementation that includes...
+These scripts contain a basic planning implementation that includes A* Search in 2-D space, where valid movements are in the North, East, South, and West directions and all have uniform cost. We also have functions for populating a grid with obstacles described in `colliders.csv`. 
+
+For the main motion planning templated code, we roughly have all the necessary state transitions coded up. We simply need to implement the `plan_path` method, which sets the waypoints for the drone to follow.
 
 And here's a lovely image of my results (ok this image has nothing to do with it, but it's a nice example of how to include images in your writeup!)
 ![Top Down View](./misc/high_up.png)

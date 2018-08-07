@@ -1,7 +1,27 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+'''Planning resources for drone navigation.
+'''
+
 from enum import Enum
 from queue import PriorityQueue
+from math import sqrt
+
 import numpy as np
 
+from src.sampling import Sampler
+from sklearn.neighbors import KDTree
+
+def can_connect(a, b, polygons):
+    '''Determine if two nodes `a` and `b` can be connected, given obstacles as 
+    `polygons`.
+    '''
+    l = LineString([a, b])
+    for p in polygons:
+        if p.crosses(l) and p.height >= min(a[2], b[2]):
+            return False
+    return True
 
 def create_grid(data, drone_altitude, safety_distance):
     """
@@ -40,8 +60,26 @@ def create_grid(data, drone_altitude, safety_distance):
 
     return grid, int(north_min), int(east_min)
 
+def create_graph(data, nodecount=50, k=10):
+    '''Generate graph for Probabilistic Roadmap (PRM) approach, with local clustering of 
+    nodes within this 3D environment, `data`.
+    '''
+    # Randomly sample graph vertices/nodes
+    sampler = Sampler(data)
+    polygons = sampler._polygons
+    nodes = sampler.sample(300)
+    # Create graph with each node connected to it's `k` nearest neighbors
+    g = nx.Graph()
+    tree = KDTree(nodes)
+    for a in nodes:
+        # Grab `k` neighbors, ommiting first element because that's `a` (`a` is closest to `a`)
+        idxs = tree.query([a], k + 1, return_distance=False)[0][1:] 
+        for i in idxs:
+            b = nodes[i]
+            if can_connect(a, b, polygons):
+                g.add_edge(a, b, weight=1)
+    return g
 
-# Assume all actions cost the same.
 class Action(Enum):
     """
     An action is represented by a 3 element tuple.
@@ -55,6 +93,10 @@ class Action(Enum):
     EAST = (0, 1, 1)
     NORTH = (-1, 0, 1)
     SOUTH = (1, 0, 1)
+    NORTH_WEST = (1, -1, sqrt(2))
+    NORTH_EAST = (-1, 1, sqrt(2))
+    SOUTH_WEST = (-1, -1, sqrt(2))
+    SOUTH_EAST = (1, 1, sqrt(2))
 
     @property
     def cost(self):
@@ -63,7 +105,6 @@ class Action(Enum):
     @property
     def delta(self):
         return (self.value[0], self.value[1])
-
 
 def valid_actions(grid, current_node):
     """
@@ -76,20 +117,27 @@ def valid_actions(grid, current_node):
     # check if the node is off the grid or
     # it's an obstacle
 
+    # NORTH, EAST, SOUTH, WEST
     if x - 1 < 0 or grid[x - 1, y] == 1:
         valid_actions.remove(Action.NORTH)
     if x + 1 > n or grid[x + 1, y] == 1:
         valid_actions.remove(Action.SOUTH)
     if y - 1 < 0 or grid[x, y - 1] == 1:
         valid_actions.remove(Action.WEST)
-    if y + 1 > m or grid[x, y + 1] == 1:
-        valid_actions.remove(Action.EAST)
+        
+    # DIAGONALS
+    if x - 1 < 0 or y - 1 < 0 or grid[x - 1, y - 1] == 1:
+        valid_actions.remove(Action.NORTH_WEST)
+    if x - 1 < 0 or y + 1 > m or grid[x - 1, y + 1] == 1:
+        valid_actions.remove(Action.NORTH_EAST)
+    if x + 1 > n or y - 1 < 0 or grid[x + 1, y - 1] == 1:
+        valid_actions.remove(Action.SOUTH_WEST)
+    if x + 1 > n or y + 1 > n or grid[x + 1, y + 1] == 1:
+        valid_actions.remove(Action.SOUTH_EAST)
 
     return valid_actions
 
-
-def a_star(grid, h, start, goal):
-
+def a_star_grid(grid, h, start, goal):
     path = []
     path_cost = 0
     queue = PriorityQueue()
@@ -139,8 +187,40 @@ def a_star(grid, h, start, goal):
         print('**********************') 
     return path[::-1], path_cost
 
+def a_star_graph(graph, h, start, goal):
+    '''Run A* algorithm through graph from start to goal, return path and cost.'''
+    q = PriorityQueue()
+    q.put(start)
+    branch = { start: (None, 0) }
+    while not q.empty():
+        node = q.get()
+        cost = branch[node][1]
+        if node == goal:
+            break
+        for next_node in node.edges():
+            if next_node not in branch:
+                # Determine cost of this next node as sum between: cost of being at 
+                # `node`, cost from `node` to `next_node`, and cost of `next_node` 
+                # to `goal`
+                next_cost = cost + h(node, next_node) + h(next_node, goal)
+                branch[next_node] = (node, next_cost)
+                q.put(next_node)
+    path = [] 
+    cost = 0
+    if goal in branch:
+        print('Path to goal found!')
+        # Backtrack path from goal to start
+        branch_node = goal
+        while branch_node is not None:
+            path.append(branch_node)
+            
+    else:
+        print('No path found')
+    return path, cost
 
-
-def heuristic(position, goal_position):
+def euclid_dist(position, goal_position):
     return np.linalg.norm(np.array(position) - np.array(goal_position))
 
+def prune(path):
+    '''Remove redundant waypoints from path.'''
+    pass
