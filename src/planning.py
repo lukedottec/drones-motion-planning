@@ -221,6 +221,20 @@ def a_star_graph(graph, h, start, goal):
 def euclid_dist(position, goal_position):
     return np.linalg.norm(np.array(position) - np.array(goal_position))
 
-def prune(path):
+def collinearity_2D(p1, p2, p3):
+        return collinear
+
+def prune(path, epsilon=0.1):
     '''Remove redundant waypoints from path.'''
-    pass
+    pruned = [p for p in path]
+    i = 0
+    while i < len(pruned) - 2:
+        p1 = pruned[i]
+        p2 = pruned[i+1]
+        p3 = pruned[i+2]
+	det = p1[0]*(p2[1] - p3[1]) + p2[0]*(p3[1] - p1[1]) + p3[0]*(p1[1] - p2[1])
+	if abs(det) <= epsilon:
+            pruned.remove(pruned[i+1])
+        else:
+            i += 1
+    return pruned
