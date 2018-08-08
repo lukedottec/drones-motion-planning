@@ -12,7 +12,7 @@
 5. Use a collinearity test or ray tracing method (like Bresenham) to remove unnecessary waypoints.
 6. Return waypoints in local ECEF coordinates (format for `self.all_waypoints` is [N, E, altitude, heading], where the drone’s start location corresponds to [0, 0, 0, 0].
 7. Write it up.
-8. Congratulations!  Your Done!
+8. Congratulations! Your Done!
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/1534/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -27,53 +27,48 @@ You're reading it! Below I describe how I addressed each rubric point and where 
 ### Explain the Starter Code
 
 #### 1. Explain the functionality of what's provided in `motion_planning.py` and `planning_utils.py`
-These scripts contain a basic planning implementation that includes A* Search in 2-D space, where valid movements are in the North, East, South, and West directions and all have uniform cost. We also have functions for populating a grid with obstacles described in `colliders.csv`. 
+_These scripts contain a basic planning implementation that includes A* Search in 2-D space, where valid movements are in the North, East, South, and West directions and all have uniform cost. We also have functions for populating a grid with obstacles described in `colliders.csv`._ 
 
 For the main motion planning templated code, we roughly have all the necessary state transitions coded up. We simply need to implement the `plan_path` method, which sets the waypoints for the drone to follow.
-
-And here's a lovely image of my results (ok this image has nothing to do with it, but it's a nice example of how to include images in your writeup!)
-![Top Down View](./misc/high_up.png)
-
-Here's | A | Snappy | Table
---- | --- | --- | ---
-1 | `highlight` | **bold** | 7.41
-2 | a | b | c
-3 | *italic* | text | 403
-4 | 2 | 3 | abcd
 
 ### Implementing Your Path Planning Algorithm
 
 #### 1. Set your global home position
-Here students should read the first line of the csv file, extract lat0 and lon0 as floating point values and use the self.set_home_position() method to set global home. Explain briefly how you accomplished this in your code.
+_Here students should read the first line of the csv file, extract lat0 and lon0 as floating point values and use the self.set_home_position() method to set global home. Explain briefly how you accomplished this in your code._
 
-
-And here is a lovely picture of our downtown San Francisco environment from above!
-![Map of SF](./misc/map.png)
+Just as described. We load the file into memory as an object, read the first line as a string, extract the matched fields using Regex, and convert them to floating point numbers. We then pass these numbers into the `self.set_home_position` like this: `self.set_home_position(lon0, lat0, 0)`.
 
 #### 2. Set your current local position
-Here as long as you successfully determine your local position relative to global home you'll be all set. Explain briefly how you accomplished this in your code.
+_Here as long as you successfully determine your local position relative to global home you'll be all set. Explain briefly how you accomplished this in your code._
 
-
-Meanwhile, here's a picture of me flying through the trees!
-![Forest Flying](./misc/in_the_trees.png)
+This conversion is performed with the following line, which uses the provided `global_to_local` (from `udacidrone.frame_utils`) function: `local_north, local_east, local_down = global_to_local(self.global_position, self.global_home)`.
 
 #### 3. Set grid start position from local position
-This is another step in adding flexibility to the start location. As long as it works you're good to go!
+_This is another step in adding flexibility to the start location. As long as it works you're good to go!_
+
+We convert the local position coordinates into grid coordinates by taking into account the grid's north and east offset. After accounting for the offset, we then round the coordiantes up to the nearest integer.
 
 #### 4. Set grid goal position from geodetic coords
-This step is to add flexibility to the desired goal location. Should be able to choose any (lat, lon) within the map and have it rendered to a goal location on the grid.
+_This step is to add flexibility to the desired goal location. Should be able to choose any (lat, lon) within the map and have it rendered to a goal location on the grid._
+
+This step is similar to the previous step, except with a small preprocess. We hardcode the global goal position to be `(-122.401912, 37.794409)`, which were provided to me, and then convert them to local coordinates. After this, we do just what we did in the last step; we convert the local coordinates to grid coordinates.
 
 #### 5. Modify A* to include diagonal motion (or replace A* altogether)
-Minimal requirement here is to modify the code in planning_utils() to update the A* implementation to include diagonal motions on the grid that have a cost of sqrt(2), but more creative solutions are welcome. Explain the code you used to accomplish this step.
+_Minimal requirement here is to modify the code in planning_utils() to update the A* implementation to include diagonal motions on the grid that have a cost of sqrt(2), but more creative solutions are welcome. Explain the code you used to accomplish this step._
+
+Instead of updating a file called `planning_utils.py`, I put my code under `src.planning`.
+
+The adaptation of A* was quite simple. We essentially added the four valid diagonal actions of length `sqrt(2)`: northwest, northeast, southwest, and southest. In addition editing the Enum, we also edited the function for producing valid actions. Now it includes the diagonal motions if they are valid for travel.
 
 #### 6. Cull waypoints 
-For this step you can use a collinearity test or ray tracing method like Bresenham. The idea is simply to prune your path of unnecessary waypoints. Explain the code you used to accomplish this step.
+_For this step you can use a collinearity test or ray tracing method like Bresenham. The idea is simply to prune your path of unnecessary waypoints. Explain the code you used to accomplish this step._
 
-
+We used a collinearity test with a default `espilon = 0.1` (just a guessed value, worked okay in practice). With this test, we sweep through the nodes along the path - generated by A* - in groups of three. The middle node is removed if the magnitude of the following determinant is less than or equal to `epsilon`: `det = p1[0] * (p2[1] - p3[1]) + p2[0] * (p3[1] - p1[1]) + p3[0] * (p1[1] - p2[1])`. 
 
 ### Execute the flight
 #### 1. Does it work?
-It works!
+
+Yep. It works!
 
 ### Double check that you've met specifications for each of the [rubric](https://review.udacity.com/#!/rubrics/1534/view) points.
   

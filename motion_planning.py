@@ -140,11 +140,9 @@ class MotionPlanning(Drone):
         # Set home position to (lon0, lat0, 0)
         self.set_home_position(lon0, lat0, 0)
 
-        # Retrieve current global position
+        # Retrieve current local position
         local_north, local_east, local_down = global_to_local(self.global_position, self.global_home)
         print(f'Local => north : {local_north}, east : {local_east}, down : {local_down}')
-
-        # Convert to current local position using global_to_local()
         print('global home {0}, position {1}, local position {2}'.format(self.global_home, self.global_position, self.local_position))
 
         # Read in obstacle map; we trust that this data accurately describes the environment
@@ -181,11 +179,6 @@ class MotionPlanning(Drone):
 
         print('starting connection')
         self.connection.start()
-
-        # Only required if they do threaded
-        # while self.in_mission:
-        #    pass
-
         self.stop_log()
 
 if __name__ == '__main__':
@@ -199,3 +192,4 @@ if __name__ == '__main__':
 
     time.sleep(1)
     drone.start()
+    
